@@ -3,497 +3,1218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uçak Oyunu</title>
+    <title>2D Uçak Oyunu</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%E2%9C%88%EF%B8%8F%3C/text%3E%3C/svg%3E">
     <style>
-        body {
+        * {
             margin: 0;
-            overflow: hidden;
-            background: #87CEEB;
+            padding: 0;
+            box-sizing: border-box;
         }
-        #game-container {
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #gameContainer {
             position: relative;
             width: 100vw;
             height: 100vh;
+            overflow: hidden;
         }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+        }
+
+        .title {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.3);
+        }
+
+        .input {
+            width: 280px;
+            max-width: 80vw;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            outline: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .input-hint {
+            color: #ffd2d2;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            min-height: 1.1rem;
+        }
+
+        #leaderboardList {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0 0;
+            max-height: 40vh;
+            overflow: auto;
+            width: 320px;
+        }
+
+        #leaderboardList li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        #leaderboardTitle {
+            margin-top: 16px;
+            font-weight: bold;
+        }
+
+        #leaderboardLoading {
+            text-align: center;
+            padding: 20px;
+            color: #ccc;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         #hud {
             position: absolute;
             top: 20px;
             left: 20px;
             color: white;
-            font-family: Arial, sans-serif;
-            font-size: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            z-index: 100;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
+            font-size: 1.2rem;
+            z-index: 5;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
         }
-        #start-screen {
+
+        #score, #highScore {
+            margin: 5px 0;
+        }
+
+        .mobile-controls {
             position: absolute;
-            top: 50%;
+            bottom: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            font-family: Arial, sans-serif;
-            z-index: 200;
-            background: rgba(0,0,0,0.7);
-            padding: 20px;
-            border-radius: 10px;
-        }
-        #start-button {
-            padding: 15px 30px;
-            font-size: 24px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        #start-button:hover {
-            background: #45a049;
-        }
-        #game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            font-family: Arial, sans-serif;
-            z-index: 200;
+            transform: translateX(-50%);
             display: none;
-            background: rgba(0,0,0,0.7);
-            padding: 20px;
-            border-radius: 10px;
+            gap: 20px;
+            z-index: 5;
         }
-        #restart-button {
-            padding: 15px 30px;
-            font-size: 24px;
-            background: #4CAF50;
+        
+        .mobile-controls-vertical {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 5;
+        }
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            border-radius: 50%;
             color: white;
-            border: none;
-            border-radius: 5px;
+            font-size: 1.5rem;
             cursor: pointer;
-            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
         }
-        #restart-button:hover {
-            background: #45a049;
+
+        .mobile-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+            .mobile-controls-vertical {
+                display: flex;
+            }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
 </head>
 <body>
-    <div id="game-container">
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
         <div id="hud">
-            <div>Hız: <span id="speed">0</span> km/s</div>
-            <div>Yükseklik: <span id="altitude">0</span> m</div>
-            <div>Mesafe: <span id="distance">0</span> km</div>
+            <div id="score">Skor: 0</div>
+            <div id="highScore">En Yüksek Skor: 0</div>
+            <div id="distance">Mesafe: 0 m</div>
         </div>
-        <div id="start-screen">
-            <h1>Uçak Oyunu</h1>
-            <p>Kontroller:</p>
-            <p>↑ - Kalkış</p>
-            <p>← → - Yön Kontrolü</p>
-            <button id="start-button">Oyunu Başlat</button>
+
+        <div class="mobile-controls">
+            <div class="mobile-btn" id="leftBtn">←</div>
+            <div class="mobile-btn" id="rightBtn">→</div>
         </div>
-        <div id="game-over">
-            <h1>Oyun Bitti!</h1>
-            <p>Toplam Mesafe: <span id="final-distance">0</span> km</p>
-            <button id="restart-button">Tekrar Oyna</button>
+        
+        <div class="mobile-controls-vertical">
+            <div class="mobile-btn" id="upBtn">↑</div>
+            <div class="mobile-btn" id="downBtn">↓</div>
+        </div>
+
+        <div id="startScreen">
+            <h1 class="title">2D Uçak Oyunu</h1>
+            <input id="usernameInput" class="input" type="text" maxlength="20" placeholder="Kullanıcı adınızı giriniz" />
+            <div id="usernameError" class="input-hint" style="display:none;">Bu kullanıcı adı kullanılıyor</div>
+            <button class="button" id="startBtn" disabled>Başla</button>
+        </div>
+
+        <div id="gameOverScreen">
+            <h1 class="title">Oyun Bitti!</h1>
+            <div id="finalScore" style="font-size: 1.5rem; margin: 1rem 0;"></div>
+            <div id="finalHighScore" style="font-size: 1.2rem; margin: 1rem 0;"></div>
+            <div id="finalPlayer" style="font-size: 1.1rem; margin: 0.5rem 0;"></div>
+            <div id="leaderboardTitle">Liderlik Tablosu</div>
+            <ul id="leaderboardList"></ul>
+            <button class="button" id="restartBtn">Tekrar Oyna</button>
+            <button class="button" id="menuBtn">Ana Menü</button>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Temel değişkenler
-        let scene, camera, renderer, plane;
-        let isGameStarted = false;
-        let isGameOver = false;
-        let speed = 0;
-        let altitude = 0;
-        let distance = 0;
-        let obstacles = [];
-        let lastObstacleSpawn = 0;
-        let isTakingOff = true;
-        let takeoffProgress = 0;
-        let level = 1;
-        let obstaclesPassed = 0;
+        // Optional Supabase configuration (deployment-friendly)
+        // Prefer window.ENV (from config.js), fallback to localStorage for dev
+        const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || window.localStorage.getItem('SUPABASE_URL') || '';
+        const SUPABASE_ANON_KEY = (window.ENV && window.ENV.SUPABASE_ANON_KEY) || window.localStorage.getItem('SUPABASE_ANON_KEY') || '';
 
-        // Oyunu başlat
-        function init() {
-            // Sahne oluştur
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e); // Koyu mavi arka plan
-
-            // Kamera oluştur
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 5, -20);
-
-            // Renderer oluştur
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('game-container').appendChild(renderer.domElement);
-
-            // Işık ekle
-            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-            sunLight.position.set(100, 100, 50);
-            scene.add(sunLight);
-
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-            scene.add(ambientLight);
-
-            // Havaalanı oluştur
-            createAirport();
-            
-            // Uçak oluştur
-            createPlane();
-            
-            // Uçağın başlangıç pozisyonu
-            plane.position.set(0, 0, 0);
-            plane.rotation.set(0, 0, 0);
-            
-            // Olay dinleyicileri
-            window.addEventListener('resize', onWindowResize);
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.getElementById('start-button').addEventListener('click', startGame);
-            document.getElementById('restart-button').addEventListener('click', restartGame);
-
-            // Animasyon döngüsü
-            animate();
-        }
-
-        // Havaalanı oluştur
-        function createAirport() {
-            // Pist
-            const runwayGeometry = new THREE.PlaneGeometry(200, 30);
-            const runwayMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x333333,
-                side: THREE.DoubleSide
-            });
-            const runway = new THREE.Mesh(runwayGeometry, runwayMaterial);
-            runway.rotation.x = -Math.PI / 2;
-            runway.position.y = 0.1;
-            scene.add(runway);
-
-            // Pist çizgileri
-            const lineGeometry = new THREE.PlaneGeometry(3, 30);
-            const lineMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xffffff,
-                side: THREE.DoubleSide
-            });
-            for (let i = -80; i <= 80; i += 20) {
-                const line = new THREE.Mesh(lineGeometry, lineMaterial);
-                line.rotation.x = -Math.PI / 2;
-                line.position.set(i, 0.11, 0);
-                scene.add(line);
-            }
-
-            // Terminal binası
-            const terminalGeometry = new THREE.BoxGeometry(40, 15, 30);
-            const terminalMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
-            const terminal = new THREE.Mesh(terminalGeometry, terminalMaterial);
-            terminal.position.set(-100, 7.5, 0);
-            scene.add(terminal);
-
-            // Kontrol kulesi
-            const towerGeometry = new THREE.CylinderGeometry(8, 8, 30, 8);
-            const towerMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
-            const tower = new THREE.Mesh(towerGeometry, towerMaterial);
-            tower.position.set(-100, 20, 30);
-            scene.add(tower);
-
-            // İniş ışıkları
-            const lightGeometry = new THREE.SphereGeometry(0.5, 8, 8);
-            const lightMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x00ff00,
-                emissive: 0x00ff00,
-                emissiveIntensity: 0.5
-            });
-            for (let i = -80; i <= 80; i += 20) {
-                const light = new THREE.Mesh(lightGeometry, lightMaterial);
-                light.position.set(i, 0.5, 15);
-                scene.add(light);
-            }
-        }
-
-        // Uçak oluştur
-        function createPlane() {
-            const planeGroup = new THREE.Group();
-
-            // Gövde
-            const bodyGeometry = new THREE.CylinderGeometry(2, 2, 15, 8);
-            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.rotation.x = Math.PI / 2;
-            planeGroup.add(body);
-
-            // Kanatlar
-            const wingGeometry = new THREE.BoxGeometry(25, 0.5, 4);
-            const wingMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-            const wings = new THREE.Mesh(wingGeometry, wingMaterial);
-            planeGroup.add(wings);
-
-            // Beyaz çizgiler
-            const stripeGeometry = new THREE.BoxGeometry(22, 0.6, 0.2);
-            const stripeMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
-            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-            stripe.position.y = 0.3;
-            wings.add(stripe);
-
-            // Kuyruk
-            const tailGeometry = new THREE.BoxGeometry(6, 4, 0.5);
-            const tail = new THREE.Mesh(tailGeometry, wingMaterial);
-            tail.position.set(0, 2, -6);
-            planeGroup.add(tail);
-
-            // Kuyruk kanatları
-            const tailWingGeometry = new THREE.BoxGeometry(8, 0.5, 2);
-            const tailWings = new THREE.Mesh(tailWingGeometry, wingMaterial);
-            tailWings.position.set(0, 0, -6);
-            planeGroup.add(tailWings);
-
-            plane = planeGroup;
-            scene.add(plane);
-        }
-
-        // Pencere boyutu değiştiğinde
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // Tuş basıldığında
-        function onKeyDown(event) {
-            if (!isGameStarted || isGameOver) return;
-
-            switch(event.key) {
-                case 'ArrowUp':
-                    if (isTakingOff) {
-                        takeoffProgress += 0.005;
-                        if (takeoffProgress >= 1) {
-                            isTakingOff = false;
-                            speed = 15;
-                        }
-                    } else if (altitude < 100) {
-                        altitude += 0.5;
-                        plane.position.y = altitude;
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (!isTakingOff) {
-                        plane.position.x -= 2;
-                        plane.rotation.z = 0.2;
-                    }
-                    break;
-                case 'ArrowRight':
-                    if (!isTakingOff) {
-                        plane.position.x += 2;
-                        plane.rotation.z = -0.2;
-                    }
-                    break;
-                case ' ':
-                    if (!isTakingOff && speed < 100) {
-                        speed += 0.3;
-                    }
-                    break;
-                case 'Shift':
-                    if (!isTakingOff && speed > 10) {
-                        speed -= 0.3;
-                    }
-                    break;
-            }
-        }
-
-        // Tuş bırakıldığında
-        function onKeyUp(event) {
-            if (!isGameStarted || isGameOver) return;
-
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-                plane.rotation.z = 0;
-            }
-        }
-
-        // Oyunu başlat
-        function startGame() {
-            isGameStarted = true;
-            isTakingOff = true;
-            takeoffProgress = 0;
-            document.getElementById('start-screen').style.display = 'none';
-        }
-
-        // Oyunu yeniden başlat
-        function restartGame() {
-            isGameOver = false;
-            isTakingOff = true;
-            takeoffProgress = 0;
-            speed = 0;
-            altitude = 0;
-            distance = 0;
-            plane.position.set(0, 0, 0);
-            plane.rotation.set(0, 0, 0);
-            document.getElementById('game-over').style.display = 'none';
-            document.getElementById('start-screen').style.display = 'block';
-        }
-
-        // Engel oluştur
-        function createObstacle() {
-            const obstacleGroup = new THREE.Group();
-            
-            const bodyGeometry = new THREE.BoxGeometry(30, 30, 30);
-            const bodyMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x666666,
-                transparent: true,
-                opacity: 0.95
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            obstacleGroup.add(body);
-
-            const detailGeometry = new THREE.BoxGeometry(35, 5, 35);
-            const detailMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x444444,
-                transparent: true,
-                opacity: 0.95
-            });
-            const detail = new THREE.Mesh(detailGeometry, detailMaterial);
-            detail.position.y = 17.5;
-            obstacleGroup.add(detail);
-
-            const lightGeometry = new THREE.SphereGeometry(1.5, 16, 16);
-            const lightMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xff0000,
-                emissive: 0xff0000,
-                emissiveIntensity: 1
-            });
-            
-            for (let i = -12; i <= 12; i += 6) {
-                const topLight = new THREE.Mesh(lightGeometry, lightMaterial);
-                topLight.position.set(i, 17.5, 0);
-                obstacleGroup.add(topLight);
-            }
-            
-            for (let i = -12; i <= 12; i += 6) {
-                const sideLight = new THREE.Mesh(lightGeometry, lightMaterial);
-                sideLight.position.set(i, 0, 0);
-                obstacleGroup.add(sideLight);
-            }
-
-            obstacleGroup.position.z = plane.position.z + 150;
-            obstacleGroup.position.y = 25;
-            obstacleGroup.position.x = Math.random() * 40 - 20;
-            
-            scene.add(obstacleGroup);
-            obstacles.push(obstacleGroup);
-        }
-
-        // Engelleri güncelle
-        function updateObstacles() {
-            const currentTime = Date.now();
-            
-            if (currentTime - lastObstacleSpawn > 2000) {
-                createObstacle();
-                lastObstacleSpawn = currentTime;
-            }
-            
-            obstacles.forEach((obstacle, index) => {
-                obstacle.position.z -= speed * 0.05;
+        class PlaneGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.startScreen = document.getElementById('startScreen');
+                this.gameOverScreen = document.getElementById('gameOverScreen');
                 
-                obstacle.children.forEach(child => {
-                    if (child.material && child.material.emissive) {
-                        child.material.emissiveIntensity = 1 + Math.sin(Date.now() * 0.01) * 0.5;
-                    }
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                
+                this.gameState = 'start'; // start, takeoff, flying, gameOver
+                this.score = 0;
+                this.distance = 0;
+                this.highScore = localStorage.getItem('planeHighScore') || 0;
+                
+                this.plane = {
+                    x: 100,
+                    y: this.canvas.height - 150,
+                    width: 80,
+                    height: 30,
+                    speed: 0,
+                    maxSpeed: 8,
+                    acceleration: 0.2,
+                    // render scale for sprite-like drawing
+                    scale: 0.8,
+                    // number of circular windows on fuselage
+                    windows: 6
+                };
+                
+                this.obstacles = [];
+                this.clouds = [];
+                this.backgroundY = 0;
+                this.takeoffProgress = 0;
+                this.gameTime = 0;
+                this.obstacleSpawnTimer = 0;
+                this.obstacleSpawnInterval = 120; // frames
+                this.blinkPhase = 0; // for blinking lights on drones/ufos
+                this.level = 1;
+                this.levelOverlay = { visible: false, alpha: 0, timer: 0, text: '' };
+                this.baseSpeedMultiplier = 1.2; // global speed boost for a snappier game feel
+                this.username = localStorage.getItem('planeUsername') || '';
+                this.supabase = (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY)
+                    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+                    : null;
+                this.usernameTaken = false;
+                this.nameCheckTimer = null;
+                
+                this.keys = {};
+                this.touchControls = {
+                    left: false,
+                    right: false,
+                    up: false,
+                    down: false
+                };
+                
+                // Load plane image
+                this.planeImage = new Image();
+                this.planeImage.onload = () => {
+                    console.log('Plane image loaded successfully');
+                };
+                this.planeImage.onerror = () => {
+                    console.log('Failed to load plane image, using drawn plane');
+                };
+                this.planeImage.src = 'biplane2.png';
+                
+                this.setupEventListeners();
+                this.setupStartMenu();
+                this.updateHUD();
+                this.generateClouds();
+                this.animate();
+            }
+            
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            setupEventListeners() {
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
                 });
                 
-                const xDiff = Math.abs(plane.position.x - obstacle.position.x);
-                const yDiff = Math.abs(plane.position.y - obstacle.position.y);
-                const zDiff = Math.abs(plane.position.z - obstacle.position.z);
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
                 
-                if (xDiff < 15 && yDiff < 15 && zDiff < 15) {
-                    gameOver();
+                // Touch controls
+                document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.left = true;
+                });
+                
+                document.getElementById('leftBtn').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.left = false;
+                });
+                
+                document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.right = true;
+                });
+                
+                document.getElementById('rightBtn').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.right = false;
+                });
+                
+                document.getElementById('upBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.up = true;
+                });
+                
+                document.getElementById('upBtn').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.up = false;
+                });
+                
+                document.getElementById('downBtn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.down = true;
+                });
+                
+                document.getElementById('downBtn').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.down = false;
+                });
+                
+                // Mouse controls for mobile
+                document.getElementById('leftBtn').addEventListener('mousedown', () => {
+                    this.touchControls.left = true;
+                });
+                
+                document.getElementById('leftBtn').addEventListener('mouseup', () => {
+                    this.touchControls.left = false;
+                });
+                
+                document.getElementById('rightBtn').addEventListener('mousedown', () => {
+                    this.touchControls.right = true;
+                });
+                
+                document.getElementById('rightBtn').addEventListener('mouseup', () => {
+                    this.touchControls.right = false;
+                });
+                
+                document.getElementById('upBtn').addEventListener('mousedown', () => {
+                    this.touchControls.up = true;
+                });
+                
+                document.getElementById('upBtn').addEventListener('mouseup', () => {
+                    this.touchControls.up = false;
+                });
+                
+                document.getElementById('downBtn').addEventListener('mousedown', () => {
+                    this.touchControls.down = true;
+                });
+                
+                document.getElementById('downBtn').addEventListener('mouseup', () => {
+                    this.touchControls.down = false;
+                });
+                
+                // Game buttons
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    const input = document.getElementById('usernameInput');
+                    const name = (input.value || '').trim();
+                    if (!name || this.usernameTaken) return;
+                    this.username = name;
+                    localStorage.setItem('planeUsername', this.username);
+                    this.startGame();
+                });
+                
+                document.getElementById('restartBtn').addEventListener('click', () => {
+                    this.restartGame();
+                });
+                
+                document.getElementById('menuBtn').addEventListener('click', () => {
+                    this.showStartScreen();
+                });
+                
+                // Pause when tab is not visible
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.pauseGame();
+                    }
+                });
+            }
+
+            setupStartMenu() {
+                const input = document.getElementById('usernameInput');
+                const startBtn = document.getElementById('startBtn');
+                const errorEl = document.getElementById('usernameError');
+                if (this.username) {
+                    input.value = this.username;
+                    startBtn.disabled = true; // validate first
+                    this.validateUsername(input.value, startBtn, errorEl);
+                } else {
+                    startBtn.disabled = true;
+                }
+                input.addEventListener('input', () => {
+                    const v = (input.value || '').trim();
+                    startBtn.disabled = true;
+                    if (this.nameCheckTimer) clearTimeout(this.nameCheckTimer);
+                    this.nameCheckTimer = setTimeout(() => {
+                        this.validateUsername(v, startBtn, errorEl);
+                    }, 300);
+                });
+            }
+
+            async validateUsername(name, startBtn, errorEl) {
+                if (!name) {
+                    this.usernameTaken = false;
+                    errorEl.style.display = 'none';
+                    startBtn.disabled = true;
+                    return;
+                }
+                try {
+                    if (!this.supabase) {
+                        // If Supabase not configured, allow (or block) — here allow
+                        this.usernameTaken = false;
+                        errorEl.style.display = 'none';
+                        errorEl.textContent = 'Bu kullanıcı adı kullanılıyor';
+                        startBtn.disabled = false;
+                        return;
+                    }
+                    const { data, error } = await this.supabase
+                        .from('leaderboard')
+                        .select('player_name')
+                        .eq('player_name', name)
+                        .limit(1);
+                    if (error) throw error;
+                    const takenInDb = Array.isArray(data) && data.length > 0;
+                    const saved = this.username || localStorage.getItem('planeUsername') || '';
+                    const isOwnName = saved && name === saved;
+                    const taken = takenInDb && !isOwnName; // allow replay with own name
+                    this.usernameTaken = taken;
+                    if (taken) {
+                        errorEl.style.display = 'block';
+                        errorEl.textContent = 'Bu kullanıcı adı kullanılıyor';
+                        startBtn.disabled = true;
+                    } else {
+                        errorEl.style.display = 'none';
+                        errorEl.textContent = 'Bu kullanıcı adı kullanılıyor';
+                        startBtn.disabled = false;
+                    }
+                } catch (e) {
+                    // On error, be conservative: disable start
+                    this.usernameTaken = true;
+                    errorEl.style.display = 'block';
+                    errorEl.textContent = 'Bağlantı hatası, tekrar deneyin';
+                    startBtn.disabled = true;
+                }
+            }
+            
+            startGame() {
+                this.gameState = 'takeoff';
+                this.startScreen.style.display = 'none';
+                this.gameOverScreen.style.display = 'none';
+                this.score = 50; // Start with 50 points for Level 1
+                this.obstacles = [];
+                this.takeoffProgress = 0;
+                this.gameTime = 0;
+                this.obstacleSpawnTimer = 0;
+                
+                // Reset plane position
+                this.plane.x = 100;
+                this.plane.y = this.canvas.height - 150;
+                this.plane.speed = 0;
+                
+                this.updateHUD();
+            }
+            
+            restartGame() {
+                // Full reset to start state
+                this.score = 50; // Start with 50 points for Level 1
+                this.distance = 0;
+                this.level = 1;
+                this.levelOverlay = { visible: false, alpha: 0, timer: 0, text: '' };
+                this.obstacles = [];
+                this.gameTime = 0;
+                this.obstacleSpawnTimer = 0;
+                this.takeoffProgress = 0;
+                // Reset plane position and speed
+                this.plane.x = 100;
+                this.plane.y = this.canvas.height - 150;
+                this.plane.speed = 0;
+                // Go to takeoff like a new game
+                this.gameState = 'takeoff';
+                this.startScreen.style.display = 'none';
+                this.gameOverScreen.style.display = 'none';
+                this.updateHUD();
+            }
+            
+            showStartScreen() {
+                this.gameState = 'start';
+                this.startScreen.style.display = 'flex';
+                this.gameOverScreen.style.display = 'none';
+                // Prefill username if saved
+                const input = document.getElementById('usernameInput');
+                const startBtn = document.getElementById('startBtn');
+                const errorEl = document.getElementById('usernameError');
+                input.value = this.username || localStorage.getItem('planeUsername') || '';
+                startBtn.disabled = true;
+                this.validateUsername(input.value.trim(), startBtn, errorEl);
+            }
+            
+            pauseGame() {
+                // Game automatically pauses when tab is not visible
+            }
+            
+            gameOver() {
+                this.gameState = 'gameOver';
+                
+                // Update high score
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('planeHighScore', this.highScore);
                 }
                 
-                if (obstacle.position.z < plane.position.z - 10 && !obstacle.passed) {
-                    obstacle.passed = true;
-                    obstaclesPassed++;
-                    if (obstaclesPassed >= 5) {
-                        levelUp();
+                document.getElementById('finalScore').textContent = `Skor: ${this.score}`;
+                document.getElementById('finalHighScore').textContent = `En Yüksek Skor: ${this.highScore}`;
+                document.getElementById('finalPlayer').textContent = `Oyuncu: ${this.username || '-'}`;
+                
+                // Show loading indicator
+                this.showLeaderboardLoading();
+                
+                // Save score and load leaderboard from database
+                this.saveRemoteScore()
+                    .then(() => this.loadRemoteLeaderboard())
+                    .then((data) => {
+                        this.renderRemoteLeaderboard(data || []);
+                    })
+                    .catch((error) => {
+                        console.error('Leaderboard error:', error);
+                        this.renderRemoteLeaderboard([]);
+                    });
+                
+                this.gameOverScreen.style.display = 'flex';
+            }
+
+            getCountry() {
+                try {
+                    const lang = navigator.language || navigator.userLanguage || '';
+                    const parts = lang.split('-');
+                    return parts[1] || 'TR';
+                } catch (e) { return 'TR'; }
+            }
+
+            async saveRemoteScore() {
+                if (!this.supabase) return false;
+                const name = this.username || 'Anonim';
+                const payload = { player_name: name, score: this.score, country: this.getCountry(), updated_at: new Date().toISOString() };
+                // Upsert by primary key player_name
+                const { error } = await this.supabase
+                    .from('leaderboard')
+                    .upsert(payload, { onConflict: 'player_name' });
+                if (error) throw error;
+                return true;
+            }
+
+            async loadRemoteLeaderboard() {
+                if (!this.supabase) return null;
+                const { data, error } = await this.supabase
+                    .from('leaderboard')
+                    .select('player_name, score, updated_at')
+                    .order('score', { ascending: false })
+                    .order('updated_at', { ascending: true })
+                    .limit(10);
+                if (error) throw error;
+                return data || [];
+            }
+            
+            updateHUD() {
+                document.getElementById('score').textContent = `Skor: ${this.score}  (+50/seviye)`;
+                document.getElementById('highScore').textContent = `En Yüksek Skor: ${this.highScore}`;
+                document.getElementById('distance').textContent = `Mesafe: ${this.distance}  — Level ${this.level}`;
+            }
+            
+            generateClouds() {
+                this.clouds = [];
+                for (let i = 0; i < 10; i++) {
+                    this.clouds.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * (this.canvas.height / 2),
+                        width: 60 + Math.random() * 40,
+                        height: 30 + Math.random() * 20,
+                        speed: 0.5 + Math.random() * 0.5
+                    });
+                }
+            }
+            
+            updateClouds() {
+                this.clouds.forEach(cloud => {
+                    cloud.x -= cloud.speed;
+                    if (cloud.x + cloud.width < 0) {
+                        cloud.x = this.canvas.width;
+                        cloud.y = Math.random() * (this.canvas.height / 2);
+                    }
+                });
+            }
+            
+            drawClouds() {
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                this.clouds.forEach(cloud => {
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(cloud.x, cloud.y, cloud.width / 2, cloud.height / 2, 0, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+            }
+            
+            drawRunway() {
+                // Runway
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 100);
+                
+                // Runway lines
+                this.ctx.strokeStyle = 'white';
+                this.ctx.lineWidth = 3;
+                this.ctx.setLineDash([20, 20]);
+                
+                for (let i = 0; i < this.canvas.width; i += 40) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(i, this.canvas.height - 50);
+                    this.ctx.lineTo(i + 20, this.canvas.height - 50);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.setLineDash([]);
+                
+                // Airport buildings
+                this.ctx.fillStyle = '#666';
+                this.ctx.fillRect(this.canvas.width - 200, this.canvas.height - 200, 150, 100);
+                this.ctx.fillRect(this.canvas.width - 300, this.canvas.height - 150, 100, 50);
+                
+                // Windows
+                this.ctx.fillStyle = '#FFD700';
+                for (let i = 0; i < 5; i++) {
+                    this.ctx.fillRect(this.canvas.width - 190 + i * 25, this.canvas.height - 190, 15, 15);
+                }
+            }
+            
+           
+            /* drawPlane() — turuncu/krema 2D uçak (yan profil) */
+            drawPlane() {
+                const ctx = this.ctx;
+
+                // Konum + ölçek + hafif eğim
+                ctx.save();
+                ctx.translate(this.plane.x, this.plane.y);
+                const scl = this.plane.scale || 1;
+                ctx.scale(scl, scl);
+
+                let rot = 0;
+                if (this.gameState === 'flying') {
+                    if (this.keys?.ArrowLeft || this.touchControls?.left)  rot = -0.10;
+                    else if (this.keys?.ArrowRight || this.touchControls?.right) rot =  0.10;
+                }
+                ctx.rotate(rot);
+
+                // Try to use loaded image first, fallback to drawn plane
+                if (this.planeImage && this.planeImage.complete && this.planeImage.naturalWidth > 0) {
+                    // Use the actual plane image
+                    const imgWidth = 200; // Display width
+                    const imgHeight = 80;  // Display height
+                    ctx.drawImage(this.planeImage, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight);
+                } else {
+                    // Fallback to drawn plane (existing code)
+                    // Taslak ölçüler (sprite koordinat sistemi)
+                    const W = 420, H = 160;
+
+                    /* ---------- GÖVDE: üst/orta/alt bantlar ---------- */
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.48,  H*0.05);
+                    ctx.quadraticCurveTo(-W*0.50, -H*0.12, -W*0.35, -H*0.20); // üst sol
+                    ctx.lineTo( W*0.62,  -H*0.20);                            // üst düz
+                    ctx.quadraticCurveTo(W*0.80, -H*0.20, W*0.88, -H*0.10);   // burun üst kavis
+                    ctx.quadraticCurveTo(W*0.98, 0,       W*0.88,  H*0.10);   // burun
+                    ctx.quadraticCurveTo(W*0.80,  H*0.20, W*0.62,  H*0.20);   // burun alt kavis
+                    ctx.lineTo(-W*0.30,  H*0.20);                             // alt düz
+                    ctx.quadraticCurveTo(-W*0.50,  H*0.14, -W*0.48,  H*0.05); // alt sol
+                    ctx.closePath();
+
+                    // Üst (krema)
+                    ctx.save(); ctx.clip();
+                    ctx.fillStyle = "#F7E0B2";
+                    ctx.fillRect(-W*0.55, -H*0.30, W*1.2, H*0.35);
+                    ctx.restore();
+
+                    // Orta (açık turuncu)
+                    ctx.save(); ctx.clip();
+                    ctx.fillStyle = "#FFA54D";
+                    ctx.fillRect(-W*0.55, -H*0.02, W*1.2, H*0.22);
+                    ctx.restore();
+
+                    // Alt (koyu turuncu)
+                    ctx.save(); ctx.clip();
+                    ctx.fillStyle = "#FF7A4D";
+                    ctx.fillRect(-W*0.55,  H*0.12, W*1.2, H*0.18);
+                    ctx.restore();
+                    ctx.restore(); // gövde clip bitti
+
+                    /* ---------- Karın gölgesi ---------- */
+                    ctx.save();
+                    ctx.fillStyle = "#F05E54";
+                    ctx.globalAlpha = 0.9;
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.15, H*0.05);
+                    ctx.quadraticCurveTo(-W*0.02, H*0.36,  W*0.20, H*0.36);
+                    ctx.quadraticCurveTo( W*0.60, H*0.34,  W*0.88, H*0.18);
+                    ctx.quadraticCurveTo( W*0.40, H*0.42, -W*0.02, H*0.22);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    /* ---------- Kokpit/burun ---------- */
+                    ctx.fillStyle = "#222";
+                    ctx.beginPath();
+                    ctx.moveTo( W*0.63, -H*0.06);
+                    ctx.quadraticCurveTo(W*0.90, 0, W*0.63,  H*0.10);
+                    ctx.lineTo( W*0.80,  H*0.10);
+                    ctx.quadraticCurveTo(W*0.98, 0, W*0.80, -H*0.06);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    /* ---------- Pencereler ---------- */
+                    ctx.fillStyle = "#111";
+                    const rowY = -H*0.02, startX = -W*0.10, spacing = W*0.08;
+                    const count = this.plane.windows || 6;
+                    for (let i = 0; i < count; i++) {
+                        ctx.beginPath();
+                        ctx.arc(startX + i*spacing, rowY, 9, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+
+                    /* ---------- Kanat ---------- */
+                    ctx.save();
+                    ctx.translate(-W*0.02, H*0.08);
+                    ctx.rotate(-0.06);
+                    ctx.fillStyle = "#FDB54C";
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.12,  H*0.06);
+                    ctx.lineTo( W*0.22, -H*0.02);
+                    ctx.lineTo( W*0.10,  H*0.12);
+                    ctx.lineTo(-W*0.16,  H*0.18);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    /* ---------- Kuyruk (dikey + küçük yatay) ---------- */
+                    ctx.fillStyle = "#FDB54C";
+                    // dikey
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.46, -H*0.02);
+                    ctx.lineTo(-W*0.46, -H*0.24);
+                    ctx.lineTo(-W*0.38, -H*0.18);
+                    ctx.lineTo(-W*0.36, -H*0.02);
+                    ctx.closePath();
+                    ctx.fill();
+                    // yatay
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.32, 0);
+                    ctx.lineTo(-W*0.38, -H*0.06);
+                    ctx.lineTo(-W*0.28, -H*0.06);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // kuyruk şeritleri
+                    ctx.fillStyle = "#E25A48";
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.46, -H*0.14);
+                    ctx.lineTo(-W*0.36, -H*0.10);
+                    ctx.lineTo(-W*0.36, -H*0.12);
+                    ctx.lineTo(-W*0.46, -H*0.20);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = "#FF8C5C";
+                    ctx.beginPath();
+                    ctx.moveTo(-W*0.46, -H*0.07);
+                    ctx.lineTo(-W*0.36, -H*0.04);
+                    ctx.lineTo(-W*0.36, -H*0.06);
+                    ctx.lineTo(-W*0.46, -H*0.11);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                ctx.restore(); // translate/scale/rotate
+            }
+
+
+            
+            updatePlane() {
+                if (this.gameState === 'takeoff') {
+                    // Takeoff animation
+                    this.plane.speed = Math.min(this.plane.speed + this.plane.acceleration, this.plane.maxSpeed);
+                    this.takeoffProgress += this.plane.speed / 100;
+                    
+                    if (this.takeoffProgress >= 1) {
+                        this.gameState = 'flying';
+                        this.plane.y = this.canvas.height / 2; // Flying altitude - center of screen
+                    } else {
+                        // Gradual ascent during takeoff
+                        this.plane.y = this.canvas.height - 150 - (this.takeoffProgress * (this.canvas.height - 250));
+                    }
+                } else if (this.gameState === 'flying') {
+                    // Full movement: up, down, left, right
+                    if ((this.keys['ArrowLeft'] || this.touchControls.left) && this.plane.x > 50) {
+                        this.plane.x -= 6;
+                    }
+                    if ((this.keys['ArrowRight'] || this.touchControls.right) && this.plane.x < this.canvas.width - 50) {
+                        this.plane.x += 6;
+                    }
+                    if ((this.keys['ArrowUp'] || this.touchControls.up) && this.plane.y > 50) {
+                        this.plane.y -= 6;
+                    }
+                    if ((this.keys['ArrowDown'] || this.touchControls.down) && this.plane.y < this.canvas.height - 50) {
+                        this.plane.y += 6;
                     }
                 }
+            }
+            
+            spawnObstacle() {
+                if (this.gameState !== 'flying') return;
                 
-                if (obstacle.position.z < plane.position.z - 50) {
-                    scene.remove(obstacle);
-                    obstacles.splice(index, 1);
+                this.obstacleSpawnTimer++;
+                // Difficulty scaling with time/score
+                const difficulty = 1 + Math.floor(this.gameTime / 750) + Math.floor(this.score / 15);
+                this.obstacleSpawnInterval = Math.max(24, 110 - difficulty * 10);
+
+                if (this.obstacleSpawnTimer >= this.obstacleSpawnInterval) {
+                    this.obstacleSpawnTimer = 0;
+
+                    // Decide how many to spawn at once (denser at higher difficulty)
+                    const batch = 1 + (Math.random() < Math.min(0.6, difficulty * 0.08) ? 1 : 0);
+                    for (let b = 0; b < batch; b++) {
+                        // Weighted type selection (balloons more likely)
+                        // balloon ~50%, bird_flock ~20%, drone ~20%, ufo ~10%
+                        const r = Math.random();
+                        const type = r < 0.5 ? 'balloon' : r < 0.7 ? 'bird_flock' : r < 0.9 ? 'drone' : 'ufo';
+
+                        // Spread across almost full vertical range
+                        const baseY = Math.random() * (this.canvas.height - 140) + 60;
+                        const common = {
+                            x: this.canvas.width + 50 + b * 40,
+                            y: baseY,
+                            speed: 3 + Math.random() * 2 + difficulty * 0.2,
+                            type,
+                            life: 0,
+                        };
+
+                        let obstacle;
+                        if (type === 'balloon') {
+                            const colors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71'];
+                            obstacle = {
+                                ...common,
+                                width: 30,
+                                height: 40,
+                                color: colors[Math.floor(Math.random() * colors.length)],
+                                bobAmp: 10 + Math.random() * 10,
+                                bobSpeed: 0.02 + Math.random() * 0.02,
+                                driftUp: 0.15 + Math.random() * 0.1,
+                            };
+                        } else if (type === 'bird_flock') {
+                            const count = 3 + Math.floor(Math.random() * 3); // 3-5
+                            const angle = (-10 + Math.random() * 20) * Math.PI / 180; // -10..10 deg
+                            obstacle = {
+                                ...common,
+                                width: 50,
+                                height: 40,
+                                count,
+                                angle,
+                                spread: 16 + Math.random() * 8,
+                            };
+                        } else if (type === 'drone') {
+                            obstacle = {
+                                ...common,
+                                width: 46,
+                                height: 28,
+                                zigAmp: 20 + Math.random() * 20,
+                                zigSpeed: 0.08 + Math.random() * 0.06,
+                            };
+                        } else { // ufo
+                            obstacle = {
+                                ...common,
+                                width: 56,
+                                height: 24,
+                                zigAmp: 30 + Math.random() * 20,
+                                zigSpeed: 0.06 + Math.random() * 0.05,
+                            };
+                        }
+
+                        this.obstacles.push(obstacle);
+
+                        // Occasionally spawn an extra balloon near the first one for higher density
+                        if (type !== 'balloon' && Math.random() < 0.35) {
+                            const colors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71'];
+                            this.obstacles.push({
+                                x: common.x + 20 + Math.random() * 40,
+                                y: common.y + (Math.random() * 40 - 20),
+                                speed: common.speed * (0.9 + Math.random() * 0.3),
+                                type: 'balloon',
+                                width: 28,
+                                height: 38,
+                                color: colors[Math.floor(Math.random() * colors.length)],
+                                bobAmp: 10 + Math.random() * 12,
+                                bobSpeed: 0.02 + Math.random() * 0.02,
+                                driftUp: 0.15 + Math.random() * 0.15,
+                                life: 0
+                            });
+                        }
+                    }
+                }
+            }
+            
+            updateObstacles() {
+                this.blinkPhase += 0.15; // for blinking lights
+                this.obstacles.forEach((obstacle, index) => {
+                    obstacle.life++;
+                    obstacle.x -= obstacle.speed * (this.baseSpeedMultiplier || 1);
+
+                    switch (obstacle.type) {
+                        case 'balloon':
+                            // gentle upward drift + bobbing
+                            obstacle.y -= obstacle.driftUp;
+                            obstacle.y += Math.sin(obstacle.life * obstacle.bobSpeed) * 0.6;
+                            break;
+                        case 'bird_flock':
+                            // move with slight angle
+                            obstacle.y += Math.tan(obstacle.angle) * obstacle.speed * 0.6 * (this.baseSpeedMultiplier || 1);
+                            break;
+                        case 'drone':
+                        case 'ufo':
+                            // zigzag horizontally while advancing
+                            obstacle.y += Math.sin(obstacle.life * obstacle.zigSpeed) * 1.5;
+                            obstacle.x -= Math.sin(obstacle.life * obstacle.zigSpeed) * 0.6 * (this.baseSpeedMultiplier || 1); // subtle left-right
+                            break;
+                    }
+
+                    // Remove obstacles that are off screen
+                    if (obstacle.x + obstacle.width < 0 || obstacle.y < -80 || obstacle.y > this.canvas.height + 80) {
+                        this.obstacles.splice(index, 1);
+                        // Passing an obstacle no longer grants +1 score
+                        // Score only increases on level-up (tied to distance)
+                        this.updateHUD();
                 }
             });
         }
 
-        // Oyun sonu
-        function gameOver() {
-            isGameOver = true;
-            document.getElementById('final-distance').textContent = Math.round(distance);
-            document.getElementById('game-over').style.display = 'block';
-        }
-
-        // Seviye atlama
-        function levelUp() {
-            level++;
-            obstaclesPassed = 0;
-            speed += 5;
-            // Seviye atlama efekti
-            const levelUpDiv = document.createElement('div');
-            levelUpDiv.style.position = 'absolute';
-            levelUpDiv.style.top = '50%';
-            levelUpDiv.style.left = '50%';
-            levelUpDiv.style.transform = 'translate(-50%, -50%)';
-            levelUpDiv.style.color = '#4CAF50';
-            levelUpDiv.style.fontSize = '48px';
-            levelUpDiv.style.fontFamily = 'Arial';
-            levelUpDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
-            levelUpDiv.textContent = `Seviye ${level}!`;
-            document.getElementById('game-container').appendChild(levelUpDiv);
-            setTimeout(() => levelUpDiv.remove(), 2000);
-        }
-
-        // Animasyon döngüsü
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (isGameStarted && !isGameOver) {
-                if (isTakingOff) {
-                    // Kalkış animasyonu
-                    plane.position.y = takeoffProgress * 50;
-                    plane.rotation.x = -takeoffProgress * 0.5;
-                    altitude = plane.position.y;
-                    speed = takeoffProgress * 50;
-                } else {
-                    // Normal uçuş
-                    plane.position.z += speed * 0.1;
-                    distance += speed * 0.01;
+            drawObstacles() {
+                this.obstacles.forEach(obstacle => {
+                    this.ctx.save();
+                    this.ctx.translate(obstacle.x, obstacle.y);
+                    
+                    switch (obstacle.type) {
+                        case 'balloon': {
+                            const r = obstacle.width / 2;
+                            // Balloon body
+                            this.ctx.fillStyle = obstacle.color;
+                            this.ctx.beginPath();
+                            this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            // Gloss highlight
+                            this.ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                            this.ctx.beginPath();
+                            this.ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            // String
+                            this.ctx.strokeStyle = '#666';
+                            this.ctx.lineWidth = 2;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(0, r);
+                            this.ctx.lineTo(0, r + 20);
+                            this.ctx.stroke();
+                            break; }
+                        case 'bird_flock': {
+                            // Draw multiple small birds (V shapes)
+                            this.ctx.fillStyle = '#5D4037';
+                            for (let i = 0; i < obstacle.count; i++) {
+                                const ox = -i * obstacle.spread * 0.8;
+                                const oy = ((i % 2 === 0) ? -1 : 1) * (obstacle.spread * 0.25);
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(ox - 6, oy);
+                                this.ctx.lineTo(ox, oy - 3);
+                                this.ctx.lineTo(ox + 6, oy);
+                                this.ctx.lineTo(ox, oy + 3);
+                                this.ctx.closePath();
+                                this.ctx.fill();
+                            }
+                            break; }
+                        case 'drone': {
+                            // Metallic body
+                            this.ctx.fillStyle = '#9E9E9E';
+                            this.ctx.fillRect(-obstacle.width/2, -obstacle.height/2, obstacle.width, obstacle.height);
+                            // Rotors
+                            this.ctx.strokeStyle = '#757575';
+                            this.ctx.lineWidth = 3;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(-obstacle.width/2 - 8, 0);
+                            this.ctx.lineTo(-obstacle.width/2 + 8, 0);
+                            this.ctx.moveTo(0, -obstacle.height/2 - 8);
+                            this.ctx.lineTo(0, -obstacle.height/2 + 8);
+                            this.ctx.stroke();
+                            // Blinking red light
+                            const on = Math.sin(this.blinkPhase) > 0;
+                            this.ctx.fillStyle = on ? '#FF1744' : 'rgba(255,23,68,0.2)';
+                            this.ctx.fillRect(obstacle.width/2 - 8, -obstacle.height/2, 6, 6);
+                            break; }
+                        case 'ufo': {
+                            // Saucer body
+                            this.ctx.fillStyle = '#B0BEC5';
+                            this.ctx.beginPath();
+                            this.ctx.ellipse(0, 0, obstacle.width/2, obstacle.height/2, 0, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            // Dome
+                            this.ctx.fillStyle = '#90A4AE';
+                            this.ctx.beginPath();
+                            this.ctx.ellipse(0, -obstacle.height/3, obstacle.width/4, obstacle.height/3, 0, 0, Math.PI);
+                            this.ctx.fill();
+                            // Blinking red light
+                            const on2 = Math.cos(this.blinkPhase) > 0;
+                            this.ctx.fillStyle = on2 ? '#FF1744' : 'rgba(255,23,68,0.2)';
+                            this.ctx.beginPath();
+                            this.ctx.arc(0, obstacle.height/2 - 4, 4, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            break; }
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+            
+            checkCollisions() {
+                if (this.gameState !== 'flying') return;
+                
+                this.obstacles.forEach(obstacle => {
+                    if (this.plane.x < obstacle.x + obstacle.width &&
+                        this.plane.x + this.plane.width > obstacle.x &&
+                        this.plane.y < obstacle.y + obstacle.height &&
+                        this.plane.y + this.plane.height > obstacle.y) {
+                        this.gameOver();
+                    }
+                });
+            }
+            
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.gameState === 'start') {
+                    // Draw start screen background
+                    this.drawClouds();
+                    this.updateClouds();
+                } else if (this.gameState === 'takeoff') {
+                    // Draw runway scene
+                    this.drawRunway();
+                    this.drawClouds();
+                    this.updateClouds();
+                    this.updatePlane();
+                    this.drawPlane();
+                } else if (this.gameState === 'flying') {
+                    // Draw sky scene
+                    this.backgroundY = (this.backgroundY + 0.5) % this.canvas.height;
+                    
+                    // Sky gradient
+                    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                    gradient.addColorStop(0, '#87CEEB');
+                    gradient.addColorStop(1, '#E0F6FF');
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    this.drawClouds();
+                    this.updateClouds();
+                    this.updatePlane();
+                    this.drawPlane();
+                    this.spawnObstacle();
+                    this.updateObstacles();
+                    this.drawObstacles();
+                    this.checkCollisions();
+                    
+                    // Draw level overlay if visible
+                    if (this.levelOverlay.visible) {
+                        this.levelOverlay.timer--;
+                        this.levelOverlay.alpha = Math.max(0, this.levelOverlay.timer / 90);
+                        if (this.levelOverlay.timer <= 0) {
+                            this.levelOverlay.visible = false;
+                        }
+                        this.ctx.save();
+                        this.ctx.globalAlpha = this.levelOverlay.alpha;
+                        this.ctx.fillStyle = '#0b3d91'; // dark blue
+                        this.ctx.font = 'bold 36px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(this.levelOverlay.text || `Level ${this.level}`, this.canvas.width / 2, this.canvas.height / 2 - 40);
+                        this.ctx.restore();
+                    }
+                    
+                    this.gameTime++;
+                    // Distance increases with time; every 60 frames ~ 1 unit
+                    if (this.gameTime % 60 === 0) {
+                        const prevDist = this.distance;
+                        this.distance++;
+                        // Show Level from distance every 10 units
+                        if (Math.floor(this.distance / 10) > Math.floor(prevDist / 10)) {
+                            const levelFromDistance = 1 + Math.floor(this.distance / 10);
+                            this.level = levelFromDistance; // Update level based on distance
+                            this.score += 50; // only on level up
+                            this.levelOverlay.text = `Level ${levelFromDistance}`;
+                            this.levelOverlay.visible = true;
+                            this.levelOverlay.alpha = 1;
+                            this.levelOverlay.timer = 90;
+                        }
+                        this.updateHUD();
+                    }
                 }
-
-                // HUD'u güncelle
-                document.getElementById('speed').textContent = Math.round(speed);
-                document.getElementById('altitude').textContent = Math.round(altitude);
-                document.getElementById('distance').textContent = Math.round(distance);
-
-                // Kamera takibi
-                camera.position.z = plane.position.z - 20;
-                camera.position.y = plane.position.y + 5;
-                camera.lookAt(plane.position);
-
-                // Engelleri güncelle
-                if (!isTakingOff) {
-                    updateObstacles();
-                }
+                
+                requestAnimationFrame(() => this.animate());
             }
 
-            renderer.render(scene, camera);
-        }
+            renderRemoteLeaderboard(rows) {
+                const ul = document.getElementById('leaderboardList');
+                ul.innerHTML = '';
+                if (!rows || rows.length === 0) {
+                    ul.innerHTML = '<li style="text-align: center; color: #ccc;">Henüz skor yok</li>';
+                    return;
+                }
+                rows.forEach((item, idx) => {
+                    const li = document.createElement('li');
+                    const isMe = this.username && item.player_name === this.username;
+                    li.innerHTML = `<span>${idx + 1}. ${item.player_name}</span><span>${item.score}</span>`;
+                    if (isMe) {
+                        li.style.fontWeight = '700';
+                        li.style.background = 'rgba(255,255,255,0.2)';
+                    }
+                    ul.appendChild(li);
+                });
+            }
 
-        // Oyunu başlat
-        init();
+            showLeaderboardLoading() {
+                const ul = document.getElementById('leaderboardList');
+                ul.innerHTML = '<div id="leaderboardLoading"><div class="loading-spinner"></div><br>Liderlik tablosu yükleniyor...</div>';
+            }
+
+
+        }
+        
+        // Initialize game when page loads
+        window.addEventListener('load', () => {
+            new PlaneGame();
+        });
     </script>
 </body>
 </html> 
