@@ -206,25 +206,27 @@
     </style>
 </head>
 <body>
-    <div class="quiz-container quiz-app">
+    <div class="quiz-container">
         <div class="quiz-header">
             <h1>Genel Kültür Quiz</h1>
             <p>Kırmızı/beyaz tema • 10 soru • 30 sn</p>
         </div>
 
         <div class="start-screen">
-            <p>Hazırsan başla!</p>
-            <button class="start-btn">Oyunu Başlat</button>
+            <p style="text-align: center; font-size: 1.2rem; color: #2d3748; margin-bottom: 20px;">Hazırsan başla!</p>
+            <div style="text-align: center;">
+                <button class="start-btn">Oyunu Başlat</button>
+            </div>
         </div>
 
         <div class="timer">Kalan Süre: <span id="time">30</span> saniye</div>
-        
+
         <div class="quiz-screen">
-        <div class="question-container">
-            <div class="question"></div>
-            <div class="options"></div>
-        </div>
-        <div class="quiz-footer">
+            <div class="question-container">
+                <div class="question"></div>
+                <div class="options"></div>
+            </div>
+            <div class="quiz-footer">
                 <div class="score">Soru: <span id="progress">0/10</span></div>
                 <button class="next-btn" disabled>Sonraki</button>
             </div>
@@ -232,8 +234,8 @@
 
         <div class="result-screen">
             <h2>Skorun: <span id="final-score">0/10</span></h2>
-            <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
-                <a class="restart-btn play-again-btn">Yeniden Oyna</a>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button class="restart-btn play-again-btn">Yeniden Oyna</button>
                 <a class="restart-btn" href="score.html">Skorlarım</a>
             </div>
         </div>
