@@ -398,9 +398,9 @@
                 this.height = 50;
                 this.angle = this.startAngle;
                 this.speed = 0;
-                this.maxSpeed = isPlayer ? 320 : 280;
-                this.acceleration = isPlayer ? 0.5 : 0.45;
-                this.friction = 0.95;
+                this.maxSpeed = isPlayer ? 600 : 550;
+                this.acceleration = isPlayer ? 1.2 : 1.0;
+                this.friction = 0.97;
                 this.turnSpeed = 0.05;
                 this.drifting = false;
                 this.driftAngle = 0;
@@ -511,14 +511,32 @@
                     }
                 }
 
-                const trackBounds = 400;
-                if (Math.abs(this.x) > trackBounds) {
-                    this.x = Math.sign(this.x) * trackBounds;
-                    this.speed *= 0.5;
+                // Pist sınır kontrolü - en yakın waypoint'ten çok uzaklaştı mı?
+                this.checkTrackBounds();
+            }
+
+            checkTrackBounds() {
+                if (this.respawning) return;
+
+                // En yakın waypoint'i bul
+                let minDistance = Infinity;
+                let nearestWaypoint = null;
+
+                for (let i = 0; i < trackWaypoints.length; i++) {
+                    const wp = trackWaypoints[i];
+                    const dx = this.x - wp.x;
+                    const dy = this.y - wp.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        nearestWaypoint = wp;
+                    }
                 }
-                if (Math.abs(this.y) > trackBounds) {
-                    this.y = Math.sign(this.y) * trackBounds;
-                    this.speed *= 0.5;
+
+                // Pistin dışına çıktı mı kontrol et
+                if (nearestWaypoint && minDistance > nearestWaypoint.width) {
+                    this.resetPosition();
                 }
             }
 
@@ -559,6 +577,9 @@
                 // Hareket et
                 this.x += Math.sin(this.angle) * this.speed * 0.1;
                 this.y -= Math.cos(this.angle) * this.speed * 0.1;
+
+                // Pist sınır kontrolü
+                this.checkTrackBounds();
             }
 
             resetPosition() {
