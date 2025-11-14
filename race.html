@@ -334,16 +334,31 @@
         let maxSpeedAchieved = 0;
         let totalDriftScore = 0;
 
+        // Pist waypoint'leri (oval pist üzerinde)
+        const trackWaypoints = [];
+        const trackRadius = 300;
+        const numWaypoints = 32;
+        for (let i = 0; i < numWaypoints; i++) {
+            const angle = (i / numWaypoints) * Math.PI * 2;
+            trackWaypoints.push({
+                x: Math.cos(angle) * trackRadius,
+                y: Math.sin(angle) * trackRadius
+            });
+        }
+
         class Car {
-            constructor(x, y, isPlayer = false) {
+            constructor(x, y, isPlayer = false, startIndex = 0) {
                 this.x = x;
                 this.y = y;
+                this.startX = x;
+                this.startY = y;
+                this.startAngle = -Math.PI / 2;
                 this.width = 30;
                 this.height = 50;
-                this.angle = 0;
+                this.angle = this.startAngle;
                 this.speed = 0;
-                this.maxSpeed = isPlayer ? 300 : 250;
-                this.acceleration = isPlayer ? 0.5 : 0.4;
+                this.maxSpeed = isPlayer ? 320 : 280;
+                this.acceleration = isPlayer ? 0.5 : 0.45;
                 this.friction = 0.95;
                 this.turnSpeed = 0.05;
                 this.drifting = false;
@@ -355,6 +370,9 @@
                 this.trail = [];
                 this.driftScore = 0;
                 this.lapCount = 0;
+                this.currentWaypoint = startIndex;
+                this.respawning = false;
+                this.respawnTimer = 0;
             }
 
             randomColor() {
@@ -464,29 +482,77 @@
             }
 
             aiControl() {
-                const targetX = Math.sin(Date.now() * 0.001) * 200;
-                const targetY = Math.cos(Date.now() * 0.001) * 200;
+                // Respawn kontrolü
+                if (this.respawning) {
+                    this.respawnTimer--;
+                    if (this.respawnTimer <= 0) {
+                        this.respawning = false;
+                    }
+                    return;
+                }
 
-                const dx = targetX - this.x;
-                const dy = targetY - this.y;
+                // Hedef waypoint'i al
+                const target = trackWaypoints[this.currentWaypoint];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Waypoint'e ulaşıldı mı?
+                if (distance < 50) {
+                    this.currentWaypoint = (this.currentWaypoint + 1) % trackWaypoints.length;
+                }
+
+                // Hedefe doğru dön
                 const targetAngle = Math.atan2(dx, -dy);
-
                 let angleDiff = targetAngle - this.angle;
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-                this.angle += angleDiff * 0.05;
-                this.speed += this.acceleration * 0.8;
+                this.angle += angleDiff * 0.08;
+
+                // Hızlan
+                this.speed += this.acceleration;
                 this.speed = Math.min(this.speed, this.maxSpeed);
                 this.speed *= this.friction;
 
+                // Hareket et
                 this.x += Math.sin(this.angle) * this.speed * 0.1;
                 this.y -= Math.cos(this.angle) * this.speed * 0.1;
             }
 
+            resetPosition() {
+                this.x = this.startX;
+                this.y = this.startY;
+                this.angle = this.startAngle;
+                this.speed = 0;
+                this.respawning = true;
+                this.respawnTimer = 60; // 1 saniye (60 frame)
+            }
+
+            checkCollisionWith(other) {
+                if (this.respawning || other.respawning) return false;
+
+                const dx = this.x - other.x;
+                const dy = this.y - other.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = (this.width + other.width) / 2;
+
+                return distance < minDistance;
+            }
+
             draw(camera) {
+                // Respawn sırasında yanıp sönme
+                if (this.respawning && Math.floor(this.respawnTimer / 10) % 2 === 0) {
+                    return; // Yanıp sönme efekti için çizme
+                }
+
                 ctx.save();
                 ctx.translate(canvas.width / 2, canvas.height / 2);
+
+                // Respawn sırasında yarı saydam
+                if (this.respawning) {
+                    ctx.globalAlpha = 0.5;
+                }
 
                 this.trail.forEach(t => {
                     ctx.globalAlpha = t.life / 30;
@@ -497,7 +563,7 @@
                         10, 10
                     );
                 });
-                ctx.globalAlpha = 1;
+                ctx.globalAlpha = this.respawning ? 0.5 : 1;
 
                 ctx.translate(
                     this.x - camera.x,
@@ -559,10 +625,16 @@
             maxSpeedAchieved = 0;
             totalDriftScore = 0;
 
-            playerCar = new Car(0, 0, true);
+            // Oyuncu pistin başlangıcında
+            playerCar = new Car(0, -trackRadius, true, 0);
+
+            // AI arabaları pistin farklı noktalarına yerleştir
             aiCars = [];
+            const aiStartOffset = Math.floor(numWaypoints / 6); // Her araba 5-6 waypoint aralıkla
             for (let i = 0; i < 5; i++) {
-                aiCars.push(new Car(-50 + i * 30, 50 + i * 30, false));
+                const waypointIndex = (i + 1) * aiStartOffset % numWaypoints;
+                const startWaypoint = trackWaypoints[waypointIndex];
+                aiCars.push(new Car(startWaypoint.x, startWaypoint.y, false, waypointIndex));
             }
 
             gameLoop();
@@ -641,6 +713,28 @@
 
             aiCars.forEach(car => {
                 car.update({});
+            });
+
+            // Oyuncu vs AI çarpışma kontrolü
+            aiCars.forEach(aiCar => {
+                if (playerCar.checkCollisionWith(aiCar)) {
+                    playerCar.resetPosition();
+                    aiCar.resetPosition();
+                }
+            });
+
+            // AI vs AI çarpışma kontrolü
+            for (let i = 0; i < aiCars.length; i++) {
+                for (let j = i + 1; j < aiCars.length; j++) {
+                    if (aiCars[i].checkCollisionWith(aiCars[j])) {
+                        aiCars[i].resetPosition();
+                        aiCars[j].resetPosition();
+                    }
+                }
+            }
+
+            // Tüm arabaları çiz
+            aiCars.forEach(car => {
                 car.draw(camera);
             });
 
