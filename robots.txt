@@ -1,0 +1,25 @@
+# robots.txt for https://nurkartalci.vercel.app/
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://nurkartalci.vercel.app/sitemap.xml
+
+# Specific paths
+Allow: /index.html
+Allow: /quiz.html
+Allow: /plane.html
+Allow: /race.html
+Allow: /snake.html
+Allow: /score.html
+Allow: /settings.html
+Allow: /images/
+
+# Disallow unnecessary files
+Disallow: /*.rar$
+Disallow: /.git/
+Disallow: /node_modules/
+
+# Crawl-delay (optional, polite crawling)
+Crawl-delay: 1
