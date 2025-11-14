@@ -334,17 +334,58 @@
         let maxSpeedAchieved = 0;
         let totalDriftScore = 0;
 
-        // Pist waypoint'leri (oval pist üzerinde)
-        const trackWaypoints = [];
-        const trackRadius = 300;
-        const numWaypoints = 32;
-        for (let i = 0; i < numWaypoints; i++) {
-            const angle = (i / numWaypoints) * Math.PI * 2;
-            trackWaypoints.push({
-                x: Math.cos(angle) * trackRadius,
-                y: Math.sin(angle) * trackRadius
-            });
-        }
+        // Neon Cenneti - Şehir Pisti Waypoint'leri
+        const trackWaypoints = [
+            // Başlangıç düz yolu
+            {x: 0, y: -800, width: 150},
+            {x: 0, y: -700, width: 150},
+            {x: 0, y: -600, width: 150},
+            {x: 0, y: -500, width: 150},
+            {x: 0, y: -400, width: 150},
+
+            // Sağa geniş viraj
+            {x: 100, y: -300, width: 140},
+            {x: 250, y: -200, width: 130},
+            {x: 400, y: -100, width: 120},
+            {x: 500, y: 0, width: 120},
+
+            // Düz cadde
+            {x: 550, y: 150, width: 130},
+            {x: 600, y: 300, width: 140},
+            {x: 650, y: 450, width: 150},
+
+            // Dar sokak - sağa keskin viraj
+            {x: 600, y: 550, width: 100},
+            {x: 500, y: 600, width: 90},
+            {x: 400, y: 620, width: 90},
+
+            // S kıvrımı
+            {x: 250, y: 650, width: 100},
+            {x: 100, y: 680, width: 100},
+            {x: -50, y: 720, width: 100},
+            {x: -200, y: 740, width: 100},
+
+            // Geniş sola viraj
+            {x: -350, y: 700, width: 130},
+            {x: -500, y: 600, width: 140},
+            {x: -600, y: 450, width: 150},
+
+            // Uzun düz cadde
+            {x: -650, y: 250, width: 140},
+            {x: -680, y: 50, width: 140},
+            {x: -680, y: -150, width: 140},
+            {x: -650, y: -350, width: 140},
+
+            // Dar viraj sağa
+            {x: -550, y: -500, width: 110},
+            {x: -400, y: -600, width: 100},
+            {x: -250, y: -650, width: 100},
+
+            // Geniş son viraj (başlangıca dönüş)
+            {x: -100, y: -700, width: 130},
+            {x: 0, y: -750, width: 140}
+        ];
+        const numWaypoints = trackWaypoints.length;
 
         class Car {
             constructor(x, y, isPlayer = false, startIndex = 0) {
@@ -626,7 +667,7 @@
             totalDriftScore = 0;
 
             // Oyuncu pistin başlangıcında
-            playerCar = new Car(0, -trackRadius, true, 0);
+            playerCar = new Car(trackWaypoints[0].x, trackWaypoints[0].y, true, 0);
 
             // AI arabaları pistin farklı noktalarına yerleştir
             aiCars = [];
@@ -651,53 +692,163 @@
             gameState = 'menu';
         }
 
+        // Binalar ve hologramlar için animasyon
+        let animationTime = 0;
+
         function drawTrack() {
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.translate(-camera.x, -camera.y);
 
-            ctx.fillStyle = '#2a2a2a';
+            // Koyu şehir arka planı
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 2000);
+            gradient.addColorStop(0, '#0a0a15');
+            gradient.addColorStop(1, '#000000');
+            ctx.fillStyle = gradient;
             ctx.fillRect(-2000, -2000, 4000, 4000);
 
-            ctx.strokeStyle = '#3a3a3a';
-            ctx.lineWidth = 2;
-            for (let i = -2000; i < 2000; i += 100) {
+            // Fütüristik gökdelenler
+            const buildings = [
+                {x: -1200, y: -400, w: 200, h: 600, color: '#1a1a2e'},
+                {x: -1000, y: 200, w: 150, h: 400, color: '#16213e'},
+                {x: 900, y: -600, w: 180, h: 500, color: '#1a1a2e'},
+                {x: 1100, y: 100, w: 160, h: 450, color: '#0f3460'},
+                {x: -800, y: 600, w: 140, h: 350, color: '#16213e'},
+                {x: 800, y: 800, w: 170, h: 420, color: '#1a1a2e'},
+                {x: -1100, y: -800, w: 190, h: 550, color: '#0f3460'},
+                {x: 1000, y: -200, w: 150, h: 380, color: '#16213e'}
+            ];
+
+            buildings.forEach(b => {
+                // Bina gövdesi
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+
+                // Cam yansımaları (parlak çizgiler)
+                ctx.strokeStyle = 'rgba(100, 150, 255, 0.3)';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < b.h; i += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(b.x, b.y + i);
+                    ctx.lineTo(b.x + b.w, b.y + i);
+                    ctx.stroke();
+                }
+
+                // Pencereler (yanıp sönen ışıklar)
+                for (let y = 20; y < b.h - 20; y += 30) {
+                    for (let x = 10; x < b.w - 10; x += 25) {
+                        if (Math.random() > 0.3) {
+                            const brightness = 0.3 + Math.sin(animationTime * 0.05 + x + y) * 0.2;
+                            ctx.fillStyle = `rgba(255, 200, 100, ${brightness})`;
+                            ctx.fillRect(b.x + x, b.y + y, 8, 12);
+                        }
+                    }
+                }
+            });
+
+            // Holografik reklamlar
+            const ads = [
+                {x: -900, y: -200, text: 'NEON CITY', color: '#ff00ff'},
+                {x: 750, y: 300, text: 'CYBER RACE', color: '#00ffff'},
+                {x: -650, y: 700, text: 'FUTURE NOW', color: '#ff0099'}
+            ];
+
+            ads.forEach(ad => {
+                ctx.save();
+                const pulse = 0.7 + Math.sin(animationTime * 0.1) * 0.3;
+                ctx.globalAlpha = pulse;
+                ctx.font = 'bold 40px Arial';
+                ctx.fillStyle = ad.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = ad.color;
+                ctx.fillText(ad.text, ad.x, ad.y);
+                ctx.restore();
+            });
+
+            // Pist segmentlerini çiz
+            for (let i = 0; i < trackWaypoints.length; i++) {
+                const current = trackWaypoints[i];
+                const next = trackWaypoints[(i + 1) % trackWaypoints.length];
+
+                // Pist yüzeyi (koyu asfalt)
+                const dx = next.x - current.x;
+                const dy = next.y - current.y;
+                const angle = Math.atan2(dy, dx);
+                const avgWidth = (current.width + next.width) / 2;
+
+                ctx.save();
+                ctx.translate(current.x, current.y);
+                ctx.rotate(angle);
+
+                const segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+                // Ana pist yüzeyi (karbon fiber desen)
+                const roadGradient = ctx.createLinearGradient(0, -avgWidth/2, 0, avgWidth/2);
+                roadGradient.addColorStop(0, '#1a1a1a');
+                roadGradient.addColorStop(0.5, '#2a2a2a');
+                roadGradient.addColorStop(1, '#1a1a1a');
+                ctx.fillStyle = roadGradient;
+                ctx.fillRect(0, -avgWidth/2, segmentLength, avgWidth);
+
+                // Neon ışık şeritleri (kenarlar)
+                const neonColors = ['#00ffff', '#ff00ff', '#ff0099'];
+                const neonColor = neonColors[i % neonColors.length];
+                const neonPulse = 0.5 + Math.sin(animationTime * 0.1 + i) * 0.5;
+
+                ctx.strokeStyle = neonColor;
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = neonColor;
+                ctx.globalAlpha = neonPulse;
+
+                // Sol neon şerit
                 ctx.beginPath();
-                ctx.moveTo(i, -2000);
-                ctx.lineTo(i, 2000);
+                ctx.moveTo(0, -avgWidth/2);
+                ctx.lineTo(segmentLength, -next.width/2);
                 ctx.stroke();
 
+                // Sağ neon şerit
                 ctx.beginPath();
-                ctx.moveTo(-2000, i);
-                ctx.lineTo(2000, i);
+                ctx.moveTo(0, avgWidth/2);
+                ctx.lineTo(segmentLength, next.width/2);
                 ctx.stroke();
+
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+
+                // Orta çizgi (kesikli beyaz)
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([20, 20]);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(segmentLength, 0);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.restore();
             }
 
-            ctx.strokeStyle = '#555';
-            ctx.lineWidth = 200;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 300, 300, 0, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 200, 200, 0, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.strokeStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 400, 400, 0, 0, Math.PI * 2);
-            ctx.stroke();
-
+            // Başlangıç/bitiş çizgisi
+            const startPoint = trackWaypoints[0];
+            ctx.save();
+            ctx.translate(startPoint.x, startPoint.y);
             ctx.fillStyle = '#ffffff';
-            for (let i = 0; i < 10; i++) {
-                if (i % 2 === 0) {
-                    ctx.fillRect(-50 + i * 10, -300, 10, 40);
+            for (let i = -startPoint.width/2; i < startPoint.width/2; i += 20) {
+                if (Math.floor((i + startPoint.width/2) / 20) % 2 === 0) {
+                    ctx.fillRect(i, -10, 20, 20);
                 }
             }
+            // "START" yazısı
+            ctx.font = 'bold 30px Arial';
+            ctx.fillStyle = '#ffff00';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffff00';
+            ctx.fillText('START', -40, -30);
+            ctx.restore();
 
             ctx.restore();
+            animationTime++;
         }
 
         function gameLoop() {
