@@ -940,7 +940,7 @@
                     </div>
                     <div>
                         <h4>Eğitim</h4>
-                        <p style="color: var(--text-secondary);">Ege Üniversitesi</p>
+                        <p style="color: var(--text-secondary);">EGE ÜNİVERSİTESİ</p>
                     </div>
                 </div>
             </div>
@@ -1051,5 +1051,28 @@
         });
     </script>
     <script src="main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+emailjs.init("R6yGav3n_4cm-p3gN");
+
+function handleSubmit(event) {
+    event.preventDefault();
+
+    emailjs.send("service_qdlx3qc", "template_6ruksrp", {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        message: document.getElementById("message").value,
+    })
+    .then(() => {
+        alert("Mesaj gönderildi!");
+        document.querySelector(".contact-form").reset();
+    })
+    .catch((error) => {
+        alert("Hata oluştu!");
+        console.log(error);
+    });
+}
+</script>
 </body>
 </html> 
