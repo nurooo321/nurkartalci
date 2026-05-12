@@ -176,7 +176,7 @@ class Track {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Kenar çizgileri
+   
         ctx.strokeStyle = '#ff0000';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -187,7 +187,7 @@ class Track {
         ctx.closePath();
         ctx.stroke();
 
-        // Bitiş çizgisi
+ 
         const finishLine = this.checkpoints[this.checkpoints.length - 1];
         ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 5;
