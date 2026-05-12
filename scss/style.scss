@@ -1,0 +1,16 @@
+@use "./base/reset";
+@use "./base/global";
+@use "./base/variables";
+
+@use "./layout/navbar";
+@use "./layout/footer";
+
+@use "./components/buttons";
+@use "./components/cards";
+
+@use "./pages/home";
+@use "./pages/quiz";
+@use "./pages/score";
+@use "./pages/settings";
+@use "./pages/snake";
+@use "./pages/race";
