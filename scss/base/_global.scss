@@ -1,0 +1,23 @@
+html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-family: "Poppins", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: .3s;
+  }
+  
+  section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }

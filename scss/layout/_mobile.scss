@@ -1,0 +1,16 @@
+@media (max-width: 768px) {
+
+    .hero-content,
+    .about-content,
+    .contact-container {
+      grid-template-columns: 1fr;
+    }
+  
+    .hero-text h1 {
+      font-size: 48px;
+    }
+  
+    .nav-links {
+      display: none;
+    }
+  }
